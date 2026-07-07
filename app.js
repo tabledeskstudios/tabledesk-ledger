@@ -446,21 +446,30 @@
     el("mtd-label").textContent = cat + " · " + C.monthLabel(mk);
     if (budget > 0) {
       var pct = spent / budget * 100;
+      var exact = isExact(spent, budget);
       el("mtd-pct").textContent = Math.round(pct) + "%";
       el("mtd-sub").textContent = C.fmtMoney(spent) + " of " + C.fmtMoney(budget) +
-        (pct <= 100 ? " · " + C.fmtMoney(budget - spent) + " left" : " · " + C.fmtMoney(spent - budget) + " over");
-      setMeter(el("mtd-fill"), pct);
+        (exact ? " · right on budget"
+          : pct <= 100 ? " · " + C.fmtMoney(budget - spent) + " left"
+          : " · " + C.fmtMoney(spent - budget) + " over");
+      setMeter(el("mtd-fill"), pct, exact);
     } else {
       el("mtd-pct").textContent = "";
       el("mtd-sub").textContent = C.fmtMoney(spent) + " spent · no budget set";
-      setMeter(el("mtd-fill"), spent > 0 ? 100 : 0);
+      setMeter(el("mtd-fill"), spent > 0 ? 100 : 0, false);
     }
   }
 
-  function setMeter(fill, pct) {
+  /* exact = actual matches budget to the cent: green, never red.
+     Red is reserved for strictly over budget. */
+  function setMeter(fill, pct, exact) {
     fill.style.width = Math.min(100, pct) + "%";
-    fill.classList.toggle("warn", pct >= 85 && pct < 100);
-    fill.classList.toggle("over", pct >= 100);
+    fill.classList.toggle("done", !!exact);
+    fill.classList.toggle("warn", !exact && pct >= 85 && pct <= 100);
+    fill.classList.toggle("over", !exact && pct > 100);
+  }
+  function isExact(spent, budget) {
+    return budget > 0 && Math.abs(spent - budget) < 0.005;
   }
 
   function parseAmount(raw) {
@@ -540,7 +549,7 @@
     el("hero-value").textContent = C.fmtMoney(t.expense);
     el("hero-sub").textContent = "of " + C.fmtMoney(bTotal) + " budgeted";
     var pctSpent = bTotal > 0 ? t.expense / bTotal * 100 : 0;
-    setMeter(el("hero-fill"), pctSpent);
+    setMeter(el("hero-fill"), pctSpent, isExact(t.expense, bTotal));
     var chip = el("hero-delta");
     var ref = isCurrent ? bTotal * today / days : bTotal;
     var refName = isCurrent ? "pace" : "budget";
@@ -617,7 +626,9 @@
       var top = make("div", "cat-top");
       var name = make("span", "cat-name" + (r.spent === 0 ? " dim" : ""), r.cat);
       var pct = r.budget > 0 ? r.spent / r.budget * 100 : (r.spent > 0 ? 100 : 0);
-      if (pct >= 100 && r.budget > 0) name.appendChild(make("span", "cat-flag over", " ▲ over"));
+      var exact = isExact(r.spent, r.budget);
+      if (exact) name.appendChild(make("span", "cat-flag good", " ✓ on budget"));
+      else if (pct > 100 && r.budget > 0) name.appendChild(make("span", "cat-flag over", " ▲ over"));
       else if (pct >= 85 && r.budget > 0) name.appendChild(make("span", "cat-flag warn", " near cap"));
       var amt = make("span", "cat-amt",
         C.fmtMoney(r.spent) + (r.budget > 0 ? " of " + C.fmtMoney(r.budget) : " · no budget"));
@@ -627,7 +638,7 @@
       meter.appendChild(fill);
       row.appendChild(top); row.appendChild(meter);
       host.appendChild(row);
-      setMeter(fill, pct);
+      setMeter(fill, pct, exact);
     });
   }
 

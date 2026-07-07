@@ -28,6 +28,7 @@
   --track:     #cde2fb;   /* blue 100 — unfilled meter track */
   --pace:      #898781;
   --good-text: #006300;
+  --status-good: #0ca30c;
   --warning:   #fab219;
   --critical:  #d03b3b;
   /* retro chrome */
@@ -180,6 +181,7 @@ body {
 }
 .meter-fill.warn { background: var(--warning); }
 .meter-fill.over { background: var(--critical); }
+.meter-fill.done { background: var(--status-good); }
 
 /* ---------- board ---------- */
 .filter-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
@@ -234,6 +236,7 @@ body {
 .cat-flag { font-size: 12px; font-weight: 700; margin-left: 6px; }
 .cat-flag.over { color: var(--critical); }
 .cat-flag.warn { color: var(--ink-2); }
+.cat-flag.good { color: var(--good-text); }
 
 /* ---------- history ---------- */
 .day-group { margin-bottom: 16px; }
