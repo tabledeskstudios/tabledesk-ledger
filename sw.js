@@ -1,6 +1,6 @@
 /* TableDesk Ledger service worker — cache the shell, never the API.
    Bump VERSION on every deploy so phones pick up new assets. */
-var VERSION = "tdl-v3";
+var VERSION = "tdl-v4";
 var SHELL = [
   "./", "index.html", "app.css", "app.js", "calc.js", "manifest.webmanifest",
   "fonts/silkscreen-400.woff2", "fonts/silkscreen-700.woff2",

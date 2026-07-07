@@ -620,6 +620,8 @@
       Object.keys(spend).length + " categories";
     var rows = CATEGORIES.map(function (cat) {
       return { cat: cat, spent: spend[cat] || 0, budget: state.cache.budgets[cat] || 0 };
+    }).filter(function (r) {
+      return r.budget > 0 || r.spent > 0; // no budget and nothing spent: hide the row
     }).sort(function (a, b) { return b.spent - a.spent; });
     rows.forEach(function (r) {
       var row = make("div", "cat-row");
