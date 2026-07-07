@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TableDesk Ledger</title>
+<meta name="description" content="Family budget capture and dashboard">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="theme-color" content="#f4efe3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="icons/icon-192.png" alt="" class="brand-icon">
+    <h1 class="px">LEDGER</h1>
+  </div>
+  <div class="topbar-right">
+    <span id="pending-badge" class="pending-badge" hidden>0 queued</span>
+    <button id="btn-refresh" class="iconbtn" type="button" aria-label="Refresh data">&#8635;</button>
+    <button id="btn-config" class="iconbtn" type="button" aria-label="Settings">&#9881;</button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ LOG ============ -->
+  <section id="view-log" class="view">
+    <div class="card" id="log-card">
+      <div class="seg" role="tablist" aria-label="Entry type">
+        <button type="button" class="seg-btn px is-active" data-type="expense" id="seg-expense">EXPENSE</button>
+        <button type="button" class="seg-btn px" data-type="income" id="seg-income">INCOME</button>
+      </div>
+
+      <label class="amount-wrap" for="in-amount">
+        <span class="amount-cur">$</span>
+        <input id="in-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount">
+      </label>
+
+      <div id="chip-grid" class="chip-grid" role="listbox" aria-label="Category"></div>
+
+      <div id="mtd-note" class="mtd-note" hidden>
+        <div class="mtd-head">
+          <span id="mtd-label"></span>
+          <span id="mtd-pct" class="mtd-pct"></span>
+        </div>
+        <div class="meter" aria-hidden="true"><div id="mtd-fill" class="meter-fill"></div></div>
+        <div id="mtd-sub" class="mtd-sub"></div>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Date</span>
+          <input id="in-date" type="date">
+        </label>
+        <label class="field grow">
+          <span class="field-label">Notes <span class="opt">(optional)</span></span>
+          <input id="in-notes" type="text" maxlength="120" placeholder="taco night" autocomplete="off">
+        </label>
+      </div>
+
+      <button id="btn-save" class="bigbtn px" type="button">LOG IT</button>
+      <p id="log-hint" class="hint" hidden></p>
+    </div>
+  </section>
+
+  <!-- ============ BOARD ============ -->
+  <section id="view-board" class="view" hidden>
+    <div class="filter-row">
+      <label class="field month-field">
+        <span class="field-label">Month</span>
+        <select id="sel-month"></select>
+      </label>
+      <span id="board-updated" class="updated-note"></span>
+    </div>
+
+    <div class="card hero-card">
+      <div class="tile-label" id="hero-label">Spent this month</div>
+      <div class="hero-value" id="hero-value">$0</div>
+      <div class="hero-sub" id="hero-sub"></div>
+      <div class="meter meter-lg"><div id="hero-fill" class="meter-fill"></div></div>
+      <div id="hero-delta" class="delta-chip"></div>
+    </div>
+
+    <div class="tile-grid">
+      <div class="card tile"><div class="tile-label">Cash balance</div><div class="tile-value" id="tile-cash">–</div><div class="tile-sub" id="tile-cash-sub"></div></div>
+      <div class="card tile"><div class="tile-label">Income this month</div><div class="tile-value" id="tile-income">–</div><div class="tile-sub" id="tile-income-sub"></div></div>
+      <div class="card tile"><div class="tile-label">Savings this month</div><div class="tile-value" id="tile-savings">–</div><div class="tile-sub" id="tile-savings-sub"></div></div>
+      <div class="card tile"><div class="tile-label">Left to spend</div><div class="tile-value" id="tile-left">–</div><div class="tile-sub" id="tile-left-sub"></div></div>
+    </div>
+
+    <div class="card chart-card" id="card-cumulative">
+      <div class="chart-head">
+        <div><h2 class="px chart-title">SPEND VS PACE</h2><div class="chart-sub" id="sub-cumulative"></div></div>
+        <button class="tablebtn" type="button" data-table="cumulative" aria-pressed="false">table</button>
+      </div>
+      <div class="chart-body" id="chart-cumulative"></div>
+      <div class="chart-table" id="table-cumulative" hidden></div>
+    </div>
+
+    <div class="card chart-card" id="card-categories">
+      <div class="chart-head">
+        <div><h2 class="px chart-title">WHERE IT WENT</h2><div class="chart-sub" id="sub-categories"></div></div>
+      </div>
+      <div id="chart-categories" class="cat-list"></div>
+    </div>
+
+    <div class="card chart-card" id="card-months">
+      <div class="chart-head">
+        <div><h2 class="px chart-title">INCOME VS EXPENSES</h2><div class="chart-sub">By month, all entries</div></div>
+        <button class="tablebtn" type="button" data-table="months" aria-pressed="false">table</button>
+      </div>
+      <div class="chart-body" id="chart-months"></div>
+      <div class="chart-table" id="table-months" hidden></div>
+    </div>
+
+    <div class="card chart-card" id="card-cash">
+      <div class="chart-head">
+        <div><h2 class="px chart-title">CASH BALANCE</h2><div class="chart-sub" id="sub-cash">Starting cash plus income minus spending</div></div>
+        <button class="tablebtn" type="button" data-table="cash" aria-pressed="false">table</button>
+      </div>
+      <div class="chart-body" id="chart-cash"></div>
+      <div class="chart-table" id="table-cash" hidden></div>
+    </div>
+
+    <div class="card chart-card" id="card-stash">
+      <div class="chart-head">
+        <div><h2 class="px chart-title">SAVINGS STASH</h2><div class="chart-sub">Cumulative Savings entries</div></div>
+        <button class="tablebtn" type="button" data-table="stash" aria-pressed="false">table</button>
+      </div>
+      <div class="chart-body" id="chart-stash"></div>
+      <div class="chart-table" id="table-stash" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="view-history" class="view" hidden>
+    <div id="history-list"></div>
+  </section>
+
+  <div id="empty-state" class="empty-state" hidden>
+    <p class="px">NO DATA YET</p>
+    <p>Tap the gear to connect your Google Sheet, then log your first expense.</p>
+  </div>
+</main>
+
+<nav class="tabbar" aria-label="Views">
+  <button class="tab px is-active" type="button" data-view="log">LOG</button>
+  <button class="tab px" type="button" data-view="board">BOARD</button>
+  <button class="tab px" type="button" data-view="history">HISTORY</button>
+</nav>
+
+<dialog id="config-dialog" class="config-dialog">
+  <form method="dialog" class="config-form">
+    <h2 class="px">SETTINGS</h2>
+    <label class="field">
+      <span class="field-label">Web app URL (from Apps Script deploy)</span>
+      <input id="cfg-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    </label>
+    <label class="field">
+      <span class="field-label">Token</span>
+      <input id="cfg-token" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
+    <p id="cfg-status" class="hint"></p>
+    <div class="config-actions">
+      <button id="cfg-test" type="button" class="smallbtn">Test connection</button>
+      <button id="cfg-save" value="save" class="smallbtn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="tooltip" class="tooltip" hidden></div>
+
+<script src="calc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "endpoint": "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
+  "token": "same token as in Code.gs",
+  "workbook": "/Users/maxsantamaria/Desktop/Budget 2026.xlsx"
+}

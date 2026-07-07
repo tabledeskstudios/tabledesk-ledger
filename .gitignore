@@ -1,0 +1,5 @@
+setup/
+tools/config.json
+.DS_Store
+tools/_import_tmp.xlsx
+tools/last_import_ids.json
