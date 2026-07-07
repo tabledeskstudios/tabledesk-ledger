@@ -9,9 +9,13 @@ rows, app-imported rows, and repeat runs all coexist safely. Run it
 whenever you've typed entries straight into Excel; run order vs the import
 script doesn't matter.
 
+By default only the CURRENT month is synced (his call: preloaded history =
+the current month's Input tab). Pass --all-months to seed everything.
+
 Usage:
   python3 tools/sync_from_excel.py --dry-run
   python3 tools/sync_from_excel.py
+  python3 tools/sync_from_excel.py --all-months
   python3 tools/sync_from_excel.py --mock-sheet f.json --out plan.json  # testing
 """
 import argparse, datetime, hashlib, json, os, re, subprocess, sys
@@ -188,6 +192,8 @@ def build_additions(expenses, incomes, sheet_entries):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--all-months", action="store_true",
+                    help="sync every visible month (default: current month only)")
     ap.add_argument("--mock-sheet", help="read Sheet entries from a JSON file (testing)")
     ap.add_argument("--out", help="write planned additions to a JSON file instead of posting")
     args = ap.parse_args()
@@ -208,6 +214,11 @@ def main():
     expenses, incomes, warnings = read_workbook(cfg["workbook"])
     for w in warnings:
         print("  WARN " + w)
+    if not args.all_months:
+        cur = datetime.date.today().strftime("%Y-%m")
+        expenses = [x for x in expenses if x["mk"] == cur]
+        incomes = {k: v for k, v in incomes.items() if k[0] == cur}
+        print(f"Scope: current month only ({cur}); use --all-months for everything")
     additions, income_additions = build_additions(expenses, incomes, sheet_entries)
 
     print(f"\nWorkbook rows read: {len(expenses)} expenses, {len(incomes)} income cells")
