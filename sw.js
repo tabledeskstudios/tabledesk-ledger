@@ -1,6 +1,6 @@
 /* TableDesk Ledger service worker — cache the shell, never the API.
    Bump VERSION on every deploy so phones pick up new assets. */
-var VERSION = "tdl-v4";
+var VERSION = "tdl-v5";
 var SHELL = [
   "./", "index.html", "app.css", "app.js", "calc.js", "manifest.webmanifest",
   "fonts/silkscreen-400.woff2", "fonts/silkscreen-700.woff2",
@@ -30,7 +30,7 @@ self.addEventListener("fetch", function (e) {
   var url = new URL(e.request.url);
   if (url.origin !== location.origin || e.request.method !== "GET") return; // API goes to network
   e.respondWith(
-    fetch(e.request).then(function (res) {
+    fetch(e.request, { cache: "no-cache" }).then(function (res) {
       if (res && res.ok) {
         var copy = res.clone();
         caches.open(VERSION).then(function (c) { c.put(e.request, copy); });
