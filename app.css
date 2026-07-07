@@ -281,6 +281,7 @@ body {
   width: min(92vw, 420px); padding: 16px;
 }
 .config-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.app-version { font-size: 11px; color: var(--muted); font-family: system-ui, sans-serif; }
 .config-form > * + * { margin-top: 12px; }
 .config-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .toast {
