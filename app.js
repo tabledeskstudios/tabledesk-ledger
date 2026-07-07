@@ -798,7 +798,38 @@
     if (state.view === "history") renderHistory();
   }
 
+  /* Dev preview: ?demo=1 fills the view with sample data (memory only, never saved). */
+  function seedDemo() {
+    var entries = [];
+    var cats = [["Groceries", 4, 65], ["Going Out/Entertainment", 6, 80], ["Uber/Taxi", 5, 14],
+                ["Household Necessities", 2, 40], ["Fitness", 1, 189], ["Housing", 1, 3827],
+                ["Student Loan Payment", 1, 186.33], ["Savings", 1, 1500], ["Internet", 1, 75]];
+    ["2026-05", "2026-06", "2026-07"].forEach(function (mk, mi) {
+      cats.forEach(function (c, ci) {
+        for (var i = 0; i < c[1]; i++) {
+          var day = 1 + ((ci * 5 + i * 6 + mi) % (mi === 2 ? 6 : 27));
+          entries.push({ id: mk + c[0] + i, date: mk + "-" + (day < 10 ? "0" : "") + day,
+            type: "expense", category: c[0], amount: c[2] * (0.7 + 0.6 * ((i + ci) % 3) / 2),
+            notes: i === 0 ? "sample" : "", source: "", imported: mi < 2 });
+        }
+      });
+      entries.push({ id: mk + "inc1", date: mk + "-05", type: "income", category: "Income", amount: 4858, notes: "", source: "Max", imported: false });
+      entries.push({ id: mk + "inc2", date: mk + "-12", type: "income", category: "Income", amount: 5080, notes: "", source: "Alana", imported: false });
+    });
+    state.cache = {
+      entries: entries,
+      budgets: { "Going Out/Entertainment": 2000, "Groceries": 600, "Uber/Taxi": 100,
+        "Household Necessities": 100, "Fitness": 600, "Gifts / Charity": 100, "Flights": 1000,
+        "Other": 250, "Housing": 3827, "Electric / Gas": 200, "Water / Sewer / Trash": 0,
+        "Internet": 75, "Savings": 1500, "Student Loan Payment": 186.33 },
+      config: { starting_cash: 760 },
+      fetchedAt: "demo"
+    };
+    state.cfg = { url: "demo", token: "demo" };
+  }
+
   function init() {
+    if (location.search.indexOf("demo=1") !== -1) seedDemo();
     el("in-date").value = todayStr();
 
     document.querySelectorAll(".seg-btn").forEach(function (b) {
