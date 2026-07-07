@@ -46,7 +46,9 @@ def load_config():
 def curl_json(url, post_body=None):
     cmd = ["curl", "-sL", "--max-time", "120"]
     if post_body is not None:
-        cmd += ["-X", "POST", "-H", "Content-Type: text/plain;charset=utf-8",
+        # no -X POST: --data-binary already POSTs, and curl must downgrade to GET
+        # when it follows Apps Script's 302 redirect (as browsers do)
+        cmd += ["-H", "Content-Type: text/plain;charset=utf-8",
                 "--data-binary", json.dumps(post_body)]
     cmd.append(url)
     out = subprocess.run(cmd, capture_output=True, text=True)
