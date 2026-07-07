@@ -405,6 +405,10 @@
   /* ---------------- LOG view ---------------- */
 
   function renderChips() {
+    var view = el("view-log");
+    view.classList.toggle("mode-expense", state.entryType === "expense");
+    view.classList.toggle("mode-income", state.entryType === "income");
+    el("in-notes").placeholder = state.entryType === "expense" ? "taco night" : "july paycheck";
     var grid = el("chip-grid");
     grid.textContent = "";
     var items = state.entryType === "expense" ? CATEGORIES : INCOME_SOURCES;
@@ -828,9 +832,24 @@
     state.cfg = { url: "demo", token: "demo" };
   }
 
+  /* Keep the date field and MTD math on today's date across suspend/resume:
+     iOS freezes the PWA for days; on wake, roll the default date forward unless
+     the user picked a date by hand. */
+  var lastDefaultDate = null;
+  function refreshToday() {
+    var t = todayStr();
+    if (el("in-date").value === lastDefaultDate) el("in-date").value = t;
+    if (t !== lastDefaultDate) {
+      lastDefaultDate = t;
+      renderMtdNote();
+      if (state.view === "board") renderBoard();
+    }
+  }
+
   function init() {
     if (location.search.indexOf("demo=1") !== -1) seedDemo();
-    el("in-date").value = todayStr();
+    lastDefaultDate = todayStr();
+    el("in-date").value = lastDefaultDate;
 
     document.querySelectorAll(".seg-btn").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -864,6 +883,9 @@
     });
 
     window.addEventListener("online", function () { flushQueue().then(renderPending); });
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) { refreshToday(); flushQueue().then(renderPending); }
+    });
     var resizeTimer = null;
     window.addEventListener("resize", function () {
       clearTimeout(resizeTimer);

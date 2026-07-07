@@ -48,12 +48,32 @@ income vs expenses, cash balance, and the savings stash. Budgets and
 starting cash are editable any time in the Budgets / Config tabs of the
 Google Sheet; the app picks changes up on refresh.
 
-## Importing into the workbook
+## Keeping the app and the workbook in step
+
+Two scripts, both safe to run any time, in any order:
 
 ```
-python3 tools/import_to_excel.py --dry-run   # see the plan
-python3 tools/import_to_excel.py             # do it (asks first)
+python3 tools/sync_from_excel.py --dry-run    # Excel -> Sheet: see what's missing
+python3 tools/sync_from_excel.py              # push workbook history into the Sheet
+python3 tools/import_to_excel.py --dry-run    # Sheet -> Excel: see the plan
+python3 tools/import_to_excel.py              # write app entries into the workbook
 ```
+
+`sync_from_excel.py` makes the app's dashboard reflect everything already in
+the workbook: it reads every visible month's Input blocks plus the income
+actual cells and adds whatever the Sheet is missing, marked imported so it
+can never bounce back into Excel. Dedup is by content (category + date +
+amount, counted), so hand-typed rows, app entries, and repeat runs coexist.
+Run it once at the start, and again after any session of typing entries
+directly into Excel.
+
+Income reconciliation assumes the workbook is truth: if a month's income
+cell exceeds the Sheet's entries, the difference is added as a "from
+workbook" entry; if the Sheet exceeds the workbook, that's app income you
+have not imported yet, and the import script will surface it as a conflict
+(`--force-income` accepts the app total).
+
+## Importing into the workbook
 
 The script closes the loop: backup, edit a temp copy, validate, swap, then
 mark the entries imported in the Sheet so they can never import twice.
@@ -66,6 +86,16 @@ delete button.
 
 If marking fails after a successful import, do NOT re-run the import.
 Run `python3 tools/import_to_excel.py --mark-only tools/last_import_ids.json`.
+
+## Updating the app
+
+Edits pushed to this repo go live on GitHub Pages automatically (about a
+minute). The service worker fetches network-first, so the phone gets the
+new version the next time the app opens with a connection; no reinstall,
+no re-adding to the home screen. The one-time Apps Script setup only needs
+revisiting if `apps-script/Code.gs` itself changes: paste the new file over
+the old one, then Deploy > Manage deployments > Edit > New version (the
+/exec URL stays the same).
 
 ## Notes
 

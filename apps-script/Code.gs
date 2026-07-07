@@ -48,6 +48,8 @@ function setup() {
     entries.appendRow(ENTRY_HEADER);
     entries.setFrozenRows(1);
   }
+  // keep dates as plain text so Sheets never coerces them into Date cells
+  entries.getRange(1, 3, entries.getMaxRows(), 1).setNumberFormat('@');
   var budgets = ss.getSheetByName('Budgets') || ss.insertSheet('Budgets');
   if (budgets.getLastRow() === 0) {
     budgets.appendRow(['category', 'monthly_budget']);
@@ -76,6 +78,13 @@ function json_(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function isoDate_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(v);
+}
+
 function readAll_() {
   var sh = sheet_('Entries');
   var rows = sh.getDataRange().getValues();
@@ -84,7 +93,7 @@ function readAll_() {
     var r = rows[i];
     if (r[0] === '') continue;
     out.push({
-      id: String(r[0]), ts: String(r[1]), date: String(r[2]), type: String(r[3]),
+      id: String(r[0]), ts: String(r[1]), date: isoDate_(r[2]), type: String(r[3]),
       category: String(r[4]), amount: Number(r[5]), notes: String(r[6]),
       source: String(r[7]), imported: String(r[8]) === 'yes'
     });
@@ -153,6 +162,35 @@ function doPost(e) {
         String(en.notes || '').slice(0, 200), String(en.source || '').slice(0, 20), ''
       ]);
       return json_({ ok: true, id: id });
+    }
+    if (body.action === 'add_many') {
+      // Bulk load used by tools/sync_from_excel.py to seed workbook history.
+      // Entries arrive pre-deduped with stable ids; skip any id already present.
+      var list = body.entries || [];
+      if (list.length > 500) return json_({ ok: false, error: 'too many (max 500 per call)' });
+      var have = {};
+      readAll_().forEach(function (x) { have[x.id] = true; });
+      var rows = [];
+      for (var m = 0; m < list.length; m++) {
+        var en2 = list[m];
+        var amt = Number(en2.amount);
+        if (!en2.id || have[en2.id]) continue;
+        if (!isFinite(amt) || amt <= 0) continue;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(en2.date))) continue;
+        if (en2.type !== 'expense' && en2.type !== 'income') continue;
+        have[en2.id] = true;
+        rows.push([
+          String(en2.id), new Date().toISOString(), String(en2.date), en2.type,
+          en2.type === 'income' ? 'Income' : String(en2.category), amt,
+          String(en2.notes || '').slice(0, 200), String(en2.source || '').slice(0, 20),
+          en2.imported ? 'yes' : ''
+        ]);
+      }
+      if (rows.length) {
+        var sh0 = sheet_('Entries');
+        sh0.getRange(sh0.getLastRow() + 1, 1, rows.length, ENTRY_HEADER.length).setValues(rows);
+      }
+      return json_({ ok: true, added: rows.length, skipped: list.length - rows.length });
     }
     if (body.action === 'delete') {
       var sh = sheet_('Entries');

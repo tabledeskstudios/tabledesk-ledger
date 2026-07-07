@@ -33,6 +33,7 @@
   /* retro chrome */
   --frame: #22252d;
   --accent: #128a3e;
+  --accent-red: #b3352c;
   --accent-ink: #eaf6d8;
   --shadow: rgba(34, 37, 45, 0.16);
 }
@@ -54,6 +55,7 @@
     --good-text: #0ca30c;
     --frame: #c3c2b7;
     --accent: #128a3e;
+    --accent-red: #c2443a;
     --shadow: rgba(0, 0, 0, 0.5);
   }
 }
@@ -106,6 +108,13 @@ body {
 }
 
 /* ---------- log form ---------- */
+/* entry-type accent: expenses log in red, income in green */
+#view-log { --mode-accent: var(--accent); }
+#view-log.mode-expense { --mode-accent: var(--accent-red); }
+#view-log.mode-income { --mode-accent: var(--accent); }
+#view-log .seg-btn.is-active,
+#view-log .chip.is-active,
+#view-log .bigbtn { background: var(--mode-accent); }
 .seg { display: flex; gap: 8px; }
 .seg-btn {
   flex: 1; padding: 10px 0; font-size: 13px;

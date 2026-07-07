@@ -1,5 +1,6 @@
-/* TableDesk Ledger service worker — cache the shell, never the API. */
-var VERSION = "tdl-v1";
+/* TableDesk Ledger service worker — cache the shell, never the API.
+   Bump VERSION on every deploy so phones pick up new assets. */
+var VERSION = "tdl-v2";
 var SHELL = [
   "./", "index.html", "app.css", "app.js", "calc.js", "manifest.webmanifest",
   "fonts/silkscreen-400.woff2", "fonts/silkscreen-700.woff2",
@@ -22,14 +23,24 @@ self.addEventListener("activate", function (e) {
   );
 });
 
+/* Network-first with cache fallback for the whole shell: the app is ~30KB, so
+   every online open gets the latest deploy instantly, and the last good copy
+   serves offline. */
 self.addEventListener("fetch", function (e) {
   var url = new URL(e.request.url);
   if (url.origin !== location.origin || e.request.method !== "GET") return; // API goes to network
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: url.pathname.endsWith("/") }).then(function (hit) {
-      if (hit) return hit;
-      return fetch(e.request).then(function (res) {
-        return res;
+    fetch(e.request).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(VERSION).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request, { ignoreSearch: true }).then(function (hit) {
+        if (hit) return hit;
+        if (e.request.mode === "navigate") return caches.match("index.html");
+        return Response.error();
       });
     })
   );
