@@ -94,10 +94,10 @@ def month_sheets(wb):
 
 
 def read_workbook(path):
-    """Return (expense_rows, income_cells) from every visible month."""
+    """Return (expense_rows, income_cells, projected_budgets) from every visible month."""
     raw = openpyxl.load_workbook(path)
     data = openpyxl.load_workbook(path, data_only=True)
-    expenses, incomes, warnings = [], {}, []
+    expenses, incomes, projected, warnings = [], {}, {}, []
     for name, mk in month_sheets(raw):
         ws = raw[name]
         if ws["B33"].value != "Total":
@@ -105,6 +105,27 @@ def read_workbook(path):
             continue
         for r in EXPENSE_ROWS:
             cat = str(ws.cell(row=r, column=2).value)
+            # projected budget (month tab column C); None = unreadable, leave app as-is
+            praw = ws.cell(row=r, column=3).value
+            pval = data[name].cell(row=r, column=3).value
+            if praw is None:
+                proj = 0.0
+            elif isinstance(praw, str) and praw.startswith("="):
+                if pval is None:
+                    warnings.append(f"{name}!C{r}: projected is a formula with no cached "
+                                    "value; open + save in Excel to sync this budget")
+                    proj = None
+                else:
+                    proj = pval
+            else:
+                proj = praw
+            if proj is not None:
+                try:
+                    proj = round(float(proj), 2)
+                except (TypeError, ValueError):
+                    warnings.append(f"{name}!C{r}: non-numeric projected {proj!r}, budget left as-is")
+                    proj = None
+            projected.setdefault(mk, {})[cat] = proj
             m = D_FORMULA.match(str(ws.cell(row=r, column=4).value))
             if not m:
                 warnings.append(f"{name} row {r}: no block formula, skipped")
@@ -140,7 +161,7 @@ def read_workbook(path):
                     incomes[(mk, src)] = round(float(v), 2)
                 except (TypeError, ValueError):
                     warnings.append(f"{name}!D{r}: non-numeric income {v!r}, skipped")
-    return expenses, incomes, warnings
+    return expenses, incomes, projected, warnings
 
 
 def build_additions(expenses, incomes, sheet_entries):
@@ -206,22 +227,31 @@ def main():
 
     if args.mock_sheet:
         with open(args.mock_sheet) as f:
-            sheet_entries = json.load(f)["entries"]
+            mock = json.load(f)
+        sheet_entries, sheet_budgets = mock["entries"], mock.get("budgets", {})
     else:
         data = curl_json(f"{cfg['endpoint']}?token={cfg['token']}&action=data")
         if not data.get("ok"):
             fail("server error: " + str(data.get("error")))
-        sheet_entries = data["entries"]
+        sheet_entries, sheet_budgets = data["entries"], data.get("budgets", {})
 
-    expenses, incomes, warnings = read_workbook(cfg["workbook"])
+    expenses, incomes, projected, warnings = read_workbook(cfg["workbook"])
     for w in warnings:
         print("  WARN " + w)
+    cur = datetime.date.today().strftime("%Y-%m")
     if not args.all_months:
-        cur = datetime.date.today().strftime("%Y-%m")
         expenses = [x for x in expenses if x["mk"] == cur]
         incomes = {k: v for k, v in incomes.items() if k[0] == cur}
         print(f"Scope: current month only ({cur}); use --all-months for everything")
     additions, income_additions = build_additions(expenses, incomes, sheet_entries)
+
+    # budgets: app mirrors the current month's Projected column exactly
+    cur_proj = {c: v for c, v in projected.get(cur, {}).items() if v is not None}
+    budget_changes = []
+    for c, v in sorted(cur_proj.items()):
+        old = sheet_budgets.get(c)
+        if old is None or round(float(old), 2) != v:
+            budget_changes.append((c, old, v))
 
     print(f"\nWorkbook rows read: {len(expenses)} expenses, {len(incomes)} income cells")
     print(f"To add to the Sheet: {len(additions)} expenses, {len(income_additions)} income entries")
@@ -230,14 +260,19 @@ def main():
         by_month[a["date"][:7]] = by_month.get(a["date"][:7], 0) + 1
     for mk in sorted(by_month):
         print(f"  {mk}: {by_month[mk]}")
+    if budget_changes:
+        print(f"Budget updates from {cur}'s Projected column:")
+        for c, old, v in budget_changes:
+            was = "unset" if old is None else f"${float(old):,.2f}"
+            print(f"  {c:28} {was} -> ${v:,.2f}")
 
     todo = additions + income_additions
-    if not todo:
+    if not todo and not budget_changes:
         print("Sheet already has everything.")
         return
     if args.out:
         with open(args.out, "w") as f:
-            json.dump(todo, f, indent=1)
+            json.dump({"entries": todo, "budgets": cur_proj}, f, indent=1)
         print(f"(wrote plan to {args.out}, nothing posted)")
         return
     if args.dry_run:
@@ -252,6 +287,17 @@ def main():
             fail("add_many failed mid-way (safe to re-run): " + str(res.get("error")))
         added += res.get("added", 0)
         skipped += res.get("skipped", 0)
+    if budget_changes:
+        res = curl_json(cfg["endpoint"], {"token": cfg["token"], "action": "set_budgets",
+                                          "budgets": cur_proj})
+        if not res.get("ok"):
+            if "unknown action" in str(res.get("error", "")):
+                fail("entries synced, but the backend doesn't know set_budgets yet.\n"
+                     "Update it: paste the new setup/Code.gs into your Apps Script project,\n"
+                     "then Deploy > Manage deployments > Edit (pencil) > Version: New version > Deploy.\n"
+                     "Then re-run this script.")
+            fail("set_budgets failed: " + str(res.get("error")))
+        print(f"Budgets updated: {res.get('updated', 0)} changed.")
     print(f"Done: {added} added, {skipped} already present.")
 
 

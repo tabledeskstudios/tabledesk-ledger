@@ -192,6 +192,33 @@ function doPost(e) {
       }
       return json_({ ok: true, added: rows.length, skipped: list.length - rows.length });
     }
+    if (body.action === 'set_budgets') {
+      // Mirror the workbook's projected amounts (tools/sync_from_excel.py).
+      var nb = body.budgets || {};
+      var bsh = sheet_('Budgets');
+      var brows = bsh.getDataRange().getValues();
+      var seen = {}, changed = 0;
+      for (var bi = 1; bi < brows.length; bi++) {
+        var bcat = String(brows[bi][0]);
+        if (bcat === '') continue;
+        seen[bcat] = true;
+        if (nb.hasOwnProperty(bcat)) {
+          var bv = Number(nb[bcat]);
+          if (isFinite(bv) && bv >= 0 && bv !== Number(brows[bi][1])) {
+            bsh.getRange(bi + 1, 2).setValue(bv);
+            changed++;
+          }
+        }
+      }
+      for (var ci = 0; ci < CATEGORIES.length; ci++) {
+        var cc = CATEGORIES[ci];
+        if (!seen[cc] && nb.hasOwnProperty(cc)) {
+          var cv = Number(nb[cc]);
+          if (isFinite(cv) && cv >= 0) { bsh.appendRow([cc, cv]); changed++; }
+        }
+      }
+      return json_({ ok: true, updated: changed });
+    }
     if (body.action === 'delete') {
       var sh = sheet_('Entries');
       var rows = sh.getDataRange().getValues();

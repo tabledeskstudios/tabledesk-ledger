@@ -44,9 +44,12 @@ Fill `tools/config.json` (already gitignored) with the same `/exec` URL.
 Just log things. Expense categories mirror the workbook exactly; income
 takes a source (Alana / Max) because the workbook tracks income per person.
 The Board tab shows month-to-date burn vs budget pace, category meters,
-income vs expenses, cash balance, and the savings stash. Budgets and
-starting cash are editable any time in the Budgets / Config tabs of the
-Google Sheet; the app picks changes up on refresh.
+income vs expenses, cash balance, and the savings stash.
+
+Budgets follow the workbook: `sync_from_excel.py` mirrors the current
+month's Projected column (month tab C19:C32) into the Sheet's Budgets tab
+on every run, so change budgeted amounts in Excel and re-run the sync.
+Starting cash is still edited directly in the Sheet's Config tab.
 
 ## Keeping the app and the workbook in step
 
