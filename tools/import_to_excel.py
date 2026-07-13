@@ -28,8 +28,8 @@ IDS_PATH = os.path.join(HERE, "last_import_ids.json")
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                "July", "August", "September", "October", "November", "December"]
 
-EXPENSE_ROWS = range(19, 33)   # month-tab expense rows (14 categories)
-TOTAL_ROW = 33
+EXPENSE_ROWS = range(19, 35)   # month-tab expense rows (16 categories)
+TOTAL_ROW = 35
 D_FORMULA = re.compile(r"^=SUM\('(.+ Input)'!C(\d+):C(\d+)\)$")
 H2_FORMULA = re.compile(r"^=SUM\(C5:C(\d+)\)$")
 
@@ -265,7 +265,7 @@ def validate(tmp_path, writes, sheet_meta, income_writes):
         if str(iws["H3"].value) != f"='{meta['month']}'!D{TOTAL_ROW}":
             errs.append(f"{iname}!H3: {iws['H3'].value!r}")
         for col in "CDE":
-            want = f"=SUBTOTAL(109,{col}19:{col}32)"
+            want = f"=SUBTOTAL(109,{col}19:{col}34)"
             if mws[f"{col}{TOTAL_ROW}"].value != want:
                 errs.append(f"{meta['month']}!{col}{TOTAL_ROW}: {mws[f'{col}{TOTAL_ROW}'].value!r}")
     for w in income_writes:

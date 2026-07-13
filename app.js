@@ -6,7 +6,8 @@
   /* Category order: most-used first (his call), fixed money colors per entity. */
   var CATEGORIES = [
     "Going Out/Entertainment", "Groceries", "Uber/Taxi", "Household Necessities",
-    "Fitness", "Gifts / Charity", "Flights", "Other", "Housing", "Electric / Gas",
+    "Fitness", "Gifts / Charity", "Flights", "Alana Personal", "Max Personal",
+    "Other", "Housing", "Electric / Gas",
     "Water / Sewer / Trash", "Internet", "Savings", "Student Loan Payment"
   ];
   var INCOME_SOURCES = ["Alana", "Max", "Other"];

@@ -18,7 +18,8 @@ var TOKEN = 'PASTE_YOUR_TOKEN_HERE';
 
 var CATEGORIES = [
   'Going Out/Entertainment', 'Groceries', 'Uber/Taxi', 'Household Necessities',
-  'Fitness', 'Gifts / Charity', 'Flights', 'Other', 'Housing', 'Electric / Gas',
+  'Fitness', 'Gifts / Charity', 'Flights', 'Alana Personal', 'Max Personal',
+  'Other', 'Housing', 'Electric / Gas',
   'Water / Sewer / Trash', 'Internet', 'Savings', 'Student Loan Payment'
 ];
 
@@ -26,7 +27,8 @@ var CATEGORIES = [
 var DEFAULT_BUDGETS = {
   'Going Out/Entertainment': 2000, 'Groceries': 600, 'Uber/Taxi': 100,
   'Household Necessities': 100, 'Fitness': 600, 'Gifts / Charity': 100,
-  'Flights': 1000, 'Other': 250, 'Housing': 3827, 'Electric / Gas': 200,
+  'Flights': 1000, 'Alana Personal': 0, 'Max Personal': 0,
+  'Other': 250, 'Housing': 3827, 'Electric / Gas': 200,
   'Water / Sewer / Trash': 0, 'Internet': 75, 'Savings': 1500,
   'Student Loan Payment': 186.33
 };

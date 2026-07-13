@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(HERE, "config.json")
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                "July", "August", "September", "October", "November", "December"]
-EXPENSE_ROWS = range(19, 33)
+EXPENSE_ROWS = range(19, 35)
 D_FORMULA = re.compile(r"^=SUM\('(.+ Input)'!C(\d+):C(\d+)\)$")
 EPOCH = datetime.datetime(1899, 12, 30)
 
@@ -100,7 +100,7 @@ def read_workbook(path):
     expenses, incomes, projected, warnings = [], {}, {}, []
     for name, mk in month_sheets(raw):
         ws = raw[name]
-        if ws["B33"].value != "Total":
+        if ws["B35"].value != "Total":
             warnings.append(f"{name}: unexpected layout, skipped whole month")
             continue
         for r in EXPENSE_ROWS:
