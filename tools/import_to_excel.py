@@ -16,7 +16,7 @@ Usage:
 
 Config: tools/config.json (see config.example.json).
 """
-import argparse, datetime, json, os, re, shutil, subprocess, sys, zipfile
+import argparse, datetime, glob, json, os, re, shutil, subprocess, sys, zipfile
 from copy import copy
 
 import openpyxl
@@ -353,12 +353,23 @@ def main():
     check_not_open(wb_path)
 
     stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M")
-    backup = os.path.join(os.path.dirname(wb_path),
-                          os.path.splitext(os.path.basename(wb_path))[0] + f" BACKUP {stamp}-preimport.xlsx")
+    stem = os.path.splitext(os.path.basename(wb_path))[0]
+    backup_dir = os.path.expanduser("~/Documents/Finances")
+    if not os.path.isdir(backup_dir):
+        backup_dir = os.path.dirname(wb_path)
+    backup = os.path.join(backup_dir, stem + f" BACKUP {stamp}-preimport.xlsx")
     shutil.copy2(wb_path, backup)
     shutil.move(tmp_path, wb_path)
     print(f"\nWrote {len(writes)} expense entries + {len(income_writes)} income cells.")
     print(f"Backup: {backup}")
+
+    # keep only the 3 newest backups of this workbook
+    backups = sorted(glob.glob(os.path.join(glob.escape(backup_dir),
+                                            glob.escape(stem) + " BACKUP *.xlsx")),
+                     key=os.path.getmtime)
+    for old in backups[:-3]:
+        os.remove(old)
+        print(f"Pruned old backup: {os.path.basename(old)}")
 
     ids = [e["id"] for (_, _, e, _) in writes] + new_income_ids
     with open(IDS_PATH, "w") as f:
